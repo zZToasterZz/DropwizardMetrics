@@ -1,8 +1,9 @@
 package main.metrics;
 
 import com.codahale.metrics.MetricRegistry;
-import io.dropwizard.metrics.servlets.MetricsServlet;
-import jakarta.servlet.annotation.WebListener;
+import com.codahale.metrics.servlets.MetricsServlet;
+
+import javax.servlet.annotation.WebListener;
 
 @WebListener
 public class MetricsServletContextListener extends MetricsServlet.ContextListener {

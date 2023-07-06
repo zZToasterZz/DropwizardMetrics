@@ -1,17 +1,14 @@
 package main;
 
-import com.codahale.metrics.MetricRegistry;
-import com.izettle.metrics.influxdb.InfluxDbHttpSender;
-import com.izettle.metrics.influxdb.InfluxDbReporter;
-import com.izettle.metrics.influxdb.InfluxDbSender;
+import com.codahale.metrics.servlets.AdminServlet;
 import controllers.HomeController;
+import io.dropwizard.Application;
 import io.dropwizard.configuration.ResourceConfigurationSourceProvider;
-import io.dropwizard.core.Application;
-import io.dropwizard.core.setup.Bootstrap;
-import io.dropwizard.core.setup.Environment;
-import io.dropwizard.metrics.servlets.AdminServlet;
-
-import java.util.concurrent.TimeUnit;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.MetricsServlet;
 
 public class DropwizardMetrics extends Application<BaseConfiguration> {
     public static void main(String[] args) throws Exception {
@@ -19,21 +16,15 @@ public class DropwizardMetrics extends Application<BaseConfiguration> {
     }
 
     @Override
-    public void run(final BaseConfiguration baseConfiguration, final Environment environment) throws Exception {
+    public void run(final BaseConfiguration baseConfiguration, final Environment environment) {
+        final CollectorRegistry collectorRegistry = new CollectorRegistry();
+        collectorRegistry.register(new DropwizardExports(environment.metrics()));
 
-        final InfluxDbSender influxDbSender = getInfluxDbSender();
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        final InfluxDbReporter influxDbReporter = InfluxDbReporter.forRegistry(metricRegistry).build(influxDbSender);
-
-        environment.jersey().register(new HomeController(baseConfiguration.getTestConfigValue()));
+        environment.jersey().register(new HomeController(baseConfiguration.getApplicationName()));
         environment.jersey().register(AdminServlet.class);
 
-        influxDbReporter.start(10, TimeUnit.SECONDS);
-    }
-
-    private static InfluxDbSender getInfluxDbSender() throws Exception {
-        return new InfluxDbHttpSender("http", "localhost", 8086, "dropwizard_bucket",
-                "admin:admin123", TimeUnit.MILLISECONDS, 3000, 3000, "");
+        environment.servlets().addServlet("PrometheusEndpoint", new MetricsServlet(collectorRegistry))
+                .addMapping("/prometheus_metrics");
     }
 
     @Override

@@ -1,3 +1,5 @@
+applicationName: MetricsDemoApp
+
 server:
   applicationConnectors:
     - type: http
@@ -5,5 +7,3 @@ server:
   adminConnectors:
     - type: http
       port: 9091
-
-testConfigValue: Hello
